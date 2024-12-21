@@ -1,0 +1,114 @@
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f0f0f0;
+                margin: 0;
+                padding: 0;
+            }
+            .search-bar {
+                width: 50%;
+                height: 50px;
+                padding: 10px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                margin: 10px auto;
+                display: block;
+            }
+            #find-answer {
+                width: 20%;
+                height: 50px;
+                padding: 10px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 5px 20px 20px 5px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                margin: 10px auto;
+                display: block;
+                background-color: #4caf50;
+                color: #fff;
+                cursor: pointer;
+            }
+            #find-answer-test-id {
+                width: 20%;
+                height: 50px;
+                padding: 10px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 5px 20px 20px 5px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                margin: 10px auto;
+                display: block;
+                background-color: #4caf50;
+                color: #fff;
+                cursor: pointer;
+            }
+            #find-answer:hover {
+                background-color: #3e8e41;
+            }
+            #result {
+                width: 90%;
+                margin: 10px auto;
+                padding: 10px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            .or-label {
+                left: 50%;
+                transform: translate(-50%, -50%);
+                position: absolute;
+                font-weight: bold;
+                margin: 10px auto;
+                display: block;
+            }
+            .test-id-label {
+                font-size: 16px;
+                margin: 10px auto;
+                display: block;
+            }
+        </style>
+        <script src="/socket.io/socket.io.js"></script>
+    </head>
+    <body>
+        <input
+            type="search"
+            class="search-bar"
+            id="question"
+            placeholder="Вопрос"
+        />
+        <input
+            type="search"
+            class="search-bar"
+            id="answers"
+            placeholder="Ответы (оставить пустым если нет вариантов)"
+        />
+        <button id="find-answer" onclick="findAnswer()">Найти</button>
+        <strong class="or-label">Или</strong>
+        <br>
+        <label class="test-id-label" for="find-answer-test-id"
+            >Вставьте либо число, либо ссылку на попытку/результат
+            попытки</label
+        >
+        <input
+            type="search"
+            class="search-bar"
+            id="test_id"
+            placeholder="Test id"
+        />
+        <button id="find-answer-test-id" onclick="findAnswerTestId()">
+            Запрос
+        </button>
+
+        <div id="result"></div>
+
+        <script src="app.js"></script>
+    </body>
+</html>

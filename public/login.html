@@ -1,0 +1,212 @@
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="/socket.io/socket.io.js"></script>
+        <title>Login Page</title>
+        <style>
+            .browser-container {
+                width: 100%;
+                height: calc(100% - 65px);
+            }
+        </style>
+    </head>
+    <body>
+        <div
+            id="login-container"
+            style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                text-align: center;
+            "
+        >
+            <h2>Login</h2>
+            <input id="username" type="text" placeholder="Username" />
+            <input id="password" type="password" placeholder="Password" />
+            <button id="login-button" onclick="login()">Login</button>
+        </div>
+        <div class="browser-container">
+            <canvas id="browser"></canvas>
+        </div>
+        <script>
+            if (localStorage.access_token) window.location.assign("/");
+            // DOM Elements
+            const browser_container =
+                document.querySelector(".browser-container");
+            const browser = document.getElementById("browser");
+            const ctx = browser.getContext("2d");
+
+            const width = browser_container.clientWidth - 20;
+            const height = browser_container.clientHeight;
+
+            browser.width = width;
+            browser.height = height;
+
+            const rect = browser.getBoundingClientRect();
+
+            let current_url = "";
+
+            let loading = true;
+
+            // Socket.io
+            const socket = io();
+
+            socket.on("render_page", (buffer) => {
+                var blob = new Blob([buffer]);
+                createImageBitmap(blob).then((imageBitmap) => {
+                    ctx.drawImage(imageBitmap, 0, 0);
+                });
+            });
+
+            function login(params) {
+                document.getElementById("login-container").style.display =
+                    "none";
+                socket.emit(
+                    "open_browser",
+                    width,
+                    height,
+                    false,
+                    document.getElementById("username").value,
+                    document.getElementById("password").value
+                );
+
+                function down_handler(event) {
+                    if (!event.isPrimary) return;
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    socket.emit("mouse_down", event.button, x, y);
+                }
+
+                let move_i = 0;
+                function move_handler(event) {
+                    if (!event.isPrimary) return;
+                    move_i++;
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    if (move_i % 6 == 0) socket.emit("mouse_move", x, y);
+                }
+
+                function up_handler(event) {
+                    if (!event.isPrimary) return;
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    socket.emit("mouse_up", event.button, x, y);
+                }
+
+                function wheel_handler(event) {
+                    socket.emit("mouse_wheel", event.deltaX, event.deltaY);
+                }
+
+                function keydown_handler(event) {
+                    console.log(event.code);
+                    let pre = "";
+                    if (event.shiftKey) pre = pre + "Shift+";
+                    if (event.ctrlKey) pre = pre + "Control+";
+                    if (event.altKey) pre = pre + "Alt+";
+                    if (event.code.includes("Key")) {
+                        if (!event.shiftKey) socket.emit("key_down", event.key);
+                        else
+                            socket.emit(
+                                "key_down",
+                                event.code.replace("Key", "")
+                            );
+                    } else if (
+                        event.code.includes("Left") ||
+                        event.code.includes("Right")
+                    ) {
+                        socket.emit(
+                            "key_down",
+                            event.code.replace("Left", "").replace("Right", "")
+                        );
+                    } else {
+                        socket.emit("key_down", event.key);
+                    }
+                }
+
+                function keyup_handler(event) {
+                    if (event.code.includes("Key")) {
+                        socket.emit("key_up", event.key);
+                    } else if (
+                        event.code.includes("Left") ||
+                        event.code.includes("Right")
+                    ) {
+                        socket.emit(
+                            "key_up",
+                            event.code.replace("Left", "").replace("Right", "")
+                        );
+                    } else {
+                        socket.emit("key_up", event.code);
+                    }
+                }
+
+                // Touch event handlers
+                function touch_start_handler(event) {
+                    const touch = event.touches[0];
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    socket.emit("mouse_down", 0, x, y); // Use button 0 for touch
+                }
+                let touch_i  = 0;
+                function touch_move_handler(event) {
+                    touch_i++;
+                    const touch = event.touches[0];
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    if(touch_i % 6 == 0)socket.emit("mouse_move", x, y);
+                }
+
+                function touch_end_handler(event) {
+                    const touch = event.changedTouches[0];
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    socket.emit("mouse_up", 0, x, y); // Use button 0 for touch
+                }
+
+                // Assign event handlers
+                browser.onpointerdown = down_handler;
+                browser.onpointermove = move_handler;
+                browser.onpointerup = up_handler;
+                browser.onwheel = wheel_handler;
+
+                document.addEventListener("keydown", keydown_handler);
+                document.addEventListener("keyup", keyup_handler);
+
+                // Touch event listeners
+                browser.addEventListener("touchstart", touch_start_handler);
+                browser.addEventListener("touchmove", touch_move_handler);
+                browser.addEventListener("touchend", touch_end_handler);
+            }
+
+            socket.once("cookies", (cookies) => {
+                for (let cookie of cookies) {
+                    if (cookie.name != "access_token") continue;
+                    function setCookie(c_name, value, exdays) {
+                        var exdate = new Date();
+                        exdate.setDate(exdate.getDate() + exdays);
+                        var c_value =
+                            escape(value) +
+                            (exdays == null
+                                ? ""
+                                : "; expires=" + exdate.toUTCString()) +
+                            "; path=/";
+                        document.cookie = c_name + "=" + c_value;
+                    }
+                    setCookie(
+                        "access_token",
+                        cookie.value.replace("%20", " "),
+                        9999
+                    );
+                    localStorage.setItem(
+                        "access_token",
+                        cookie.value.replace("%20", " ")
+                    );
+
+                    window.location.assign("/");
+                    break;
+                }
+            });
+        </script>
+    </body>
+</html>
